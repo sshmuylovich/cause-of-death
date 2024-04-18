@@ -72,7 +72,7 @@ cleaned_data <- raw_data %>%
     Date = as.integer(Date)
   ) %>%
   rename(
-    Date = Year,
+    Year = Date,
   ) %>%
   mutate(
     Title = coalesce(Title, "Unknown"),
