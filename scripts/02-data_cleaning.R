@@ -1,44 +1,77 @@
 #### Preamble ####
-# Purpose: Cleans the raw plane data recorded by two observers..... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 6 April 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Cleans the raw data provided in the Museum of Modern Art's GitHub repo 'collection'.
+# Author: Sima Shmuylovich
+# Date: 18 April 2024
+# Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
+# Pre-requisites: Obtain the raw data provided here https://github.com/MuseumofModernArt/collection.git
+# Other Information: Code is appropriately styled using styler
 
 #### Workspace setup ####
 library(tidyverse)
+library(dplyr)
 
 #### Clean data ####
-raw_data <- read_csv("inputs/data/plane_data.csv")
+# Read data
+raw_data <- read_csv("data/raw_data/Artworks.csv")
 
-cleaned_data <-
-  raw_data |>
-  janitor::clean_names() |>
-  select(wing_width_mm, wing_length_mm, flying_time_sec_first_timer) |>
-  filter(wing_width_mm != "caw") |>
+# Select columns for analysis
+cleaned_data <- raw_data %>%
+  dplyr::select(Title, Artist, Nationality, Gender, Date, Classification, DateAcquired, Cataloged, "Height (cm)", "Width (cm)") %>%
   mutate(
-    flying_time_sec_first_timer = if_else(flying_time_sec_first_timer == "1,35",
-                                   "1.35",
-                                   flying_time_sec_first_timer)
-  ) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "490",
-                                 "49",
-                                 wing_width_mm)) |>
-  mutate(wing_width_mm = if_else(wing_width_mm == "6",
-                                 "60",
-                                 wing_width_mm)) |>
+    Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
+    Nationality = lapply(Nationality, unique), # Apply unique to remove duplicates
+    Nationality = sapply(Nationality, paste, collapse = ", "), # Join them into a single string
+    Nationality = ifelse(str_count(Nationality, "\\(") > 1, "Multiple Nationalities", gsub("[()]", "", Nationality)),
+    Nationality = gsub("[()]", "", Nationality),
+    Nationality = ifelse(Nationality == "", "Unknown", Nationality),
+    Nationality = coalesce(Nationality, "Unknown")
+  ) %>%
   mutate(
-    wing_width_mm = as.numeric(wing_width_mm),
-    wing_length_mm = as.numeric(wing_length_mm),
-    flying_time_sec_first_timer = as.numeric(flying_time_sec_first_timer)
-  ) |>
-  rename(flying_time = flying_time_sec_first_timer,
-         width = wing_width_mm,
-         length = wing_length_mm
-         ) |> 
-  tidyr::drop_na()
+    Gender = str_extract_all(Gender, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
+    Gender = lapply(Gender, unique), # Apply unique to remove duplicates
+    Gender = sapply(Gender, paste, collapse = ", "), # Join them into a single string
+    Gender = ifelse(str_count(Gender, "\\(") > 1, "Multiple Genders", gsub("[()]", "", Gender)),
+    Gender = gsub("[()]", "", Gender),
+    Gender = ifelse(Gender == "", "Unknown", Gender),
+    Gender = coalesce(Gender, "Unknown")
+  ) %>%
+  filter(
+    str_detect(Date, "^\\d{4}$") | # Check for "YYYY"
+      str_detect(Date, "^[[:alpha:]]+ \\d{1,2}, \\d{4}$") | # Check for "Month D, YYYY"
+      str_detect(Date, "^\\d{4}-\\d{2}$") | # Check for "YYYY-YY"
+      str_detect(Date, "^\\d{4}-\\d{4}$") | # Check for "YYYY-YYYY"
+      str_detect(Date, "^c\\. ^\\d{4}-\\d{2}$") | # Check for "c. YYYY-YY"
+      str_detect(Date, "^c\\. ^\\d{4}-\\d{4}$") | # Check for "c. YYYY-YYYY"
+      str_detect(Date, "^c\\. \\d{4}$") | # Check for "c. YYYY"
+      str_detect(Date, "^n\\.^d\\.") | # Check for "n.d."
+      str_detect(Date, "^Unknown") # Check for "Unknown"
+  ) %>%
+  mutate(
+    Date = gsub("c. ", "", Date),
+    Date = case_when(
+      str_detect(Date, "^\\d{4}$") ~ sub("^(\\d{4})$", "\\1", Date), # "YYYY"
+      str_detect(Date, "^[[:alpha:]]+ \\d{1,2}, \\d{4}$") ~ sub("^([[:alpha:]]+ \\d{1,2}, )(\\d{4})$", "\\2", Date), # "Month D, YYYY"
+      str_detect(Date, "\\d{4}-\\d{2}$") ~ sub("^(\\d{2})(\\d{2})-(\\d{2})$", "\\1\\3", Date), # "YYYY-YY"
+      str_detect(Date, "\\d{4}-\\d{4}$") ~ sub("^(\\d{4})-(\\d{4})$", "\\2", Date), # "YYYY-YYYY"
+      # str_detect(Date, "^c\\. \\d{4}-\\d{2}$") ~ sub("^c\\. (\\d{4})-(\\d{2})$", "\\1\\2", Date), # "c. YYYY-YY"
+      # str_detect(Date, "^c\\. \\d{4}-\\d{4}$") ~ sub("^(c\\. )(\\d{4)-(\\d{4})$", "\\3", Date), # "c. YYYY-YYYY"
+      str_detect(Date, "^n\\.d\\.$") ~ "Unknown",
+      str_detect(Date, "^Unknown$") ~ "Unknown",
+      TRUE ~ "Unknown" # Fallback for any formats not covered
+    ),
+    Date = coalesce(Date, "Unknown"),
+  ) %>%
+  mutate(
+    Title = coalesce(Title, "Unknown"),
+    Artist = coalesce(Artist, "Unknown"),
+    DateAcquired = as.character(DateAcquired), # Convert DateAcquired to character
+    DateAcquired = coalesce(DateAcquired, "Unknown")
+  ) %>%
+  filter(across(everything(), ~ !is.na(.)))
 
 #### Save data ####
-write_csv(cleaned_data, "outputs/data/analysis_data.csv")
+write_csv(cleaned_data, "data/analysis_data/analysis_data.csv")
+
+# Cannot save as parquet do to C++ compiler compatability error, included code that would be used otherwise
+# write_parquet(cleaned_data, "data/analysis_data/analysis_data.parquet")
