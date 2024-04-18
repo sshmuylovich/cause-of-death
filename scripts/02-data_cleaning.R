@@ -17,7 +17,7 @@ raw_data <- read_csv("data/raw_data/raw_data.csv")
 
 # Select columns for analysis
 cleaned_data <- raw_data %>%
-  dplyr::select(ObjectID, Title, Artist, Nationality, Gender, Date, "Height (cm)", "Width (cm)") %>%
+  dplyr::select(ObjectID, Title, Artist, Nationality, Gender, Date, Classification, "Height (cm)", "Width (cm)") %>%
   mutate(
     Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Nationality = lapply(Nationality, unique), # Apply unique to remove duplicates
@@ -74,6 +74,7 @@ cleaned_data <- raw_data %>%
   mutate(
     Title = coalesce(Title, "Unknown"),
     Artist = coalesce(Artist, "Unknown"),
+    Classification = coalesce(Classification, "Unknown"),
   ) %>%
   filter(across(everything(), ~ !is.na(.))) %>%
   rename(

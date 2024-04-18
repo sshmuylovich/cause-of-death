@@ -60,6 +60,22 @@ nationality_options <- c(
   "West African"
 )
 
+classification_options <- c(
+  "Architecture", "Mies van der Rohe Archive", "Design",
+  "Illustrated Book", "Print", "Drawing",
+  "Periodical", "Graphic Design", "Multiple",
+  "Installation", "Photograph", "Painting",
+  "Ephemera", "Photography Research/Reference", "Video",
+  "Media", "Publication", "Poster",
+  "Sculpture", "Film", "Work on Paper",
+  "Audio", "Performance", "(not assigned)",
+  "Textile", "Notebook", "Correspondence",
+  "Collage", "Document", "Film (object)",
+  "Frank Lloyd Wright Archive", "Furniture and Interiors", "Digital",
+  "Software", "Moving Image", "Architectural Model",
+  "News Clipping"
+)
+
 gender_options <- c("male", "female")
 
 year <- sample(1500:2023, size = num_obs, replace = TRUE)
@@ -75,6 +91,7 @@ simulation_data <- tibble(
   nationality = sample(nationality_options, size = num_obs, replace = TRUE),
   gender = sample(gender_options, size = num_obs, replace = TRUE),
   year = year,
+  classification = sample(classification_options, size = num_obs, replace = TRUE),
   height = height,
   width = width,
   area = height * width

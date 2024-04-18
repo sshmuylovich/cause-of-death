@@ -20,6 +20,8 @@ nationality_options <- c("Austrian", "French", "Unknown", "American", "German", 
 
 gender_options <- c("male", "female", "multiple genders", "unknown", "gender non-conforming", "non-binary", "transgender woman")
 
+classification_options <- c("Architecture", "Mies van der Rohe Archive", "Design", "Illustrated Book", "Print", "Drawing", "Periodical", "Graphic Design", "Multiple", "Installation", "Photograph", "Painting", "Ephemera", "Photography Research/Reference", "Video", "Media", "Publication", "Poster", "Sculpture", "Film", "Work on Paper", "Audio", "Performance", "(not assigned)", "Textile", "Notebook", "Correspondence", "Collage", "Document", "Film (object)", "Frank Lloyd Wright Archive", "Furniture and Interiors", "Digital", "Software", "Moving Image", "Architectural Model", "News Clipping")
+
 test_that("No NULL values", {
   expect_false(any(is.null(test_data$ObjectID)), "ObjectID no NULLS")
   expect_false(any(is.null(test_data$Title)), "Title no NULLS")
@@ -27,6 +29,7 @@ test_that("No NULL values", {
   expect_false(any(is.null(test_data$Nationality)), "Nationality no NULLS")
   expect_false(any(is.null(test_data$Gender)), "Gender no NULLSs")
   expect_false(any(is.null(test_data$Year)), "Year no NULLS")
+  expect_false(any(is.null(test_data$Classification)), "Classification no NULLS")
   expect_false(any(is.null(test_data$Height)), "Height no NULLS")
   expect_false(any(is.null(test_data$Width)), "Width no NULLS")
   expect_false(any(is.null(test_data$Area)), "Area no NULLS")
@@ -38,6 +41,7 @@ test_that("Expected type", {
   expect_type(test_data$Artist, "character")
   expect_type(test_data$Nationality, "character")
   expect_type(test_data$Gender, "character")
+  expect_type(test_data$Classification, "character")
   expect(is.numeric(test_data$Year), "Year Numeric")
   expect(is.numeric(test_data$Height), "Width Numeric")
   expect(is.numeric(test_data$Width), "Height Numeric")
@@ -52,6 +56,7 @@ test_that("Numeric Variable Non Negative Value Check", {
 })
 
 test_that("Expected Values", {
-  expect(all(test_data$Gender %in% gender_options), "Gender as Expected")
   expect(all(test_data$Nationality %in% nationality_options), "Nationality as Expected")
+  expect(all(test_data$Gender %in% gender_options), "Gender as Expected")
+  expect(all(test_data$Classification %in% classification_options), "Classification as Expected")
 })
