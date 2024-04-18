@@ -17,7 +17,14 @@ raw_data <- read_csv("data/raw_data/raw_data.csv")
 
 # Select columns for analysis
 cleaned_data <- raw_data %>%
-  dplyr::select(ObjectID, Title, Artist, Nationality, Gender, Date, Classification, "Height (cm)", "Width (cm)") %>%
+  # Select Interested Variables
+  dplyr::select(ObjectID, Title, Artist, Nationality, Gender, Date, Classification, OnView, "Depth (cm)", "Height (cm)", "Width (cm)") %>%
+  # Clean Title and Artist by replacing NA values with "Unknown"
+  mutate(
+    Title = coalesce(Title, "Unknown"),
+    Artist = coalesce(Artist, "Unknown")
+  ) %>%
+  # Clean Nationality
   mutate(
     Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Nationality = lapply(Nationality, unique), # Apply unique to remove duplicates
@@ -29,16 +36,18 @@ cleaned_data <- raw_data %>%
     Nationality = ifelse(Nationality == "NA", "Unknown", Nationality),
     Nationality = coalesce(Nationality, "Unknown")
   ) %>%
+  # Clean Gender
   mutate(
     Gender = str_extract_all(Gender, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Gender = lapply(Gender, unique), # Apply unique to remove duplicates
     Gender = sapply(Gender, paste, collapse = ", "), # Join them into a single string
-    Gender = ifelse(str_count(Gender, "\\(") > 1, "multiple genders", gsub("[()]", "", Gender)),
+    Gender = ifelse(str_count(Gender, "\\(") > 1, "multiple artists", gsub("[()]", "", Gender)),
     Gender = gsub("[()]", "", Gender),
     Gender = ifelse(Gender == "", "unknown", Gender),
     Gender = ifelse(Gender == "NA", "unknown", Gender),
     Gender = coalesce(Gender, "unknown")
   ) %>%
+  # Clean Date
   filter(
     str_detect(Date, "^\\d{4}$") | # Check for "YYYY"
       str_detect(Date, "^[[:alpha:]]+ \\d{1,2}, \\d{4}$") | # Check for "Month D, YYYY"
@@ -71,12 +80,52 @@ cleaned_data <- raw_data %>%
   rename(
     Year = Date
   ) %>%
+  # Add Year Buckets
   mutate(
-    Title = coalesce(Title, "Unknown"),
-    Artist = coalesce(Artist, "Unknown"),
+    YearBucket = case_when(
+      Year <= 1700 ~ "1700 or earlier",
+      Year > 1700 & Year <= 1750 ~ "1701-1750",
+      Year > 1750 & Year <= 1800 ~ "1751-1800",
+      Year > 1800 & Year <= 1850 ~ "1801-1850",
+      Year > 1850 & Year <= 1900 ~ "1851-1900",
+      Year > 1900 & Year <= 1950 ~ "1901-1950",
+      Year > 1950 & Year <= 2000 ~ "1951-2000",
+      Year > 2000 ~ "2001-Present"
+    ),
+    YearBucket = factor(
+      YearBucket,
+      levels = c(
+        "1700 or earlier",
+        "1701-1750",
+        "1751-1800",
+        "1801-1850",
+        "1851-1900",
+        "1901-1950",
+        "1951-2000",
+        "2001-Present"
+      )
+    )
+  ) %>%
+  # Clean Classification by replacing NA values with "Unknown"
+  mutate(
     Classification = coalesce(Classification, "Unknown"),
   ) %>%
-  filter(across(everything(), ~ !is.na(.))) %>%
+  # Clean OnView by replacing NA values with "Unknown"
+  mutate(
+    OnView = coalesce(OnView, "Unknown"),
+    OnViewBinary = if_else(OnView != "Uknown", 1, 0),
+  ) %>%
+  # Remove 3D-Objects
+  rename(
+    Depth = "Depth (cm)",
+  ) %>%
+  mutate(Depth = coalesce(OnView, "Unknown")) %>%
+  filter(
+    Depth == "Unknown"
+  ) %>%
+  # Clean Height and Width
+  # Get rid of Height and Width NA values so Area can be calculated
+  filter(if_any(everything(), ~ !is.na(.))) %>%
   rename(
     Height = "Height (cm)",
     Width = "Width (cm)"
@@ -84,9 +133,11 @@ cleaned_data <- raw_data %>%
   filter(
     Height > 0 & Width > 0
   ) %>%
+  # Calculate Area
   mutate(
     Area = Height * Width
-  )
+  ) %>%
+  select(ObjectID, Title, Artist, Nationality, Gender, Year, YearBucket, Classification, OnView, OnViewBinary, Height, Width, Area)
 
 #### Save data ####
 write_csv(cleaned_data, "data/analysis_data/analysis_data.csv")

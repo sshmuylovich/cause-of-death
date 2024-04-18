@@ -4,8 +4,8 @@
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: Install tidyverse, rstanarm, and modelsummary packages. 
-# Pre-requisites: Run 01-download_data.R and 02-data_cleaning.R 
+# Pre-requisites: Install tidyverse, rstanarm, and modelsummary packages.
+# Pre-requisites: Run 01-download_data.R and 02-data_cleaning.R
 # Other Information: Code is appropriately styled using styler
 
 
@@ -20,11 +20,11 @@ model_data <- read_csv("data/analysis_data/analysis_data.csv")
 ### Model data ####
 set.seed(853)
 
-model <- lm(Area ~ Gender + Year + Nationality, data = model_data)
+model <- lm(Area ~ Gender + Nationality + Year, data = model_data)
+summary(model)
 
 #### Save model ####
 saveRDS(
   model,
   file = "models/model.rds"
 )
-

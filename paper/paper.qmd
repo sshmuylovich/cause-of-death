@@ -1,41 +1,474 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
-author: Sima Shmuylovich
-thanks: "Code and data are available at: https://github.com/sshmuylovich/lottery-numbers.git."
-date: today
+title: "Predicting Artwork Size to aid Museum Workers with Exhibition Curation"
+subtitle: "The Influence of Gender, Nationality, and Year of Completion at the Museum of Modern Art"
+author: 
+  - Sima Shmuylovich
+thanks: "Code and data are available at: https://github.com/sshmuylovich/moma-artworks.git"
+date: April 18, 2024
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "This paper explores the determinants of artwork size within the Museum of Modern Art (MoMA) collection, focusing on the effects of artist gender, nationality, and year of completion. Utilizing the MoMA Artworks dataset, a linear regression model was employed to analyze how these factors influence the physical dimensions of artworks. The study reveals that artworks by male artists and those identified with multiple artists tend to be smaller in size, challenging conventional expectations about gender and artistic production. Notably, artworks from Algerian and Ghanaian artists are significantly larger, possibly reflecting unique cultural and artistic traditions that favor grand-scale works. The analysis also indicates a clear trend of increasing artwork size over time, suggesting an evolution in artistic practices and the spaces available for art display. These findings not only enhance our understanding of the factors influencing artistic expression but also have practical implications for museum curators and cultural historians in planning exhibitions and interpreting artistic trends. The paper recommends further research using non-linear models and a broader set of variables to more accurately reflect the complex variables that determine artwork size."
 format: pdf
-number-sections: true
 toc: true
+number-sections: true
 bibliography: references.bib
 ---
 
-# Introduction
+```{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(tidyverse)
+library(ggplot2)
+library(broom)
+library(broom.mixed)
+library(kableExtra)
+library(rstanarm)
+library(modelsummary)
+```
+
+# Introduction {#sec-introduction}
+Since its inception as America's first museum devoted exclusively to modern art in 1929, MoMA has played a crucial role in showcasing groundbreaking artworks, influencing art appreciation and research worldwide [@citeMoMA]. As art evolves, so do the characteristics of the artworks themselves, including their size, which often speaks volumes about the cultural, technological, and social contexts in which they were created. This study seeks to explore the determinants of artwork size within the MoMA collection, focusing on the roles of artist gender, nationality, and the year of completion. Understanding artwork size is pivotal not only for academic purposes but also for practical considerations in museum curation and exhibition design. Artwork dimensions can influence curatorial decisions, affecting how art is displayed, experienced, and interpreted by audiences. Despite its importance, the factors determining artwork size have not been extensively quantified within the context of modern art museums.
+
+This paper employs a linear regression model to analyze the MoMA Artworks dataset, investigating how specific artist characteristics impact the physical dimensions of artworks. The estimand is as follows: this paper aims to estimate the size of an artwork as defined by its area based on its artist's gender, its artist's nationality, and its year of completion. 
+
+Preliminary findings reveal intriguing variations: artworks by male artists and those identified with multiple artists tend to be smaller, while significant increases in size are noted for artworks from certain nationalities such as Algerian and Ghanaian. Additionally, a clear trend shows that artworks have generally increased in size over the years. These patterns not only challenge conventional narratives about the representation of gender in art but also highlight the impact of cultural and national influences on artistic expression.
+
+The subsequent sections follow a structured format. @sec-data outlines the source and variables central to our analysis. @sec-model details the construction and methodology of the statistical models used. @sec-results presents the key findings of our analysis, while @sec-discussion critically reviews the content, addresses the implications of the results, acknowledges model limitations, and suggests potential research directions.
 
 # Data {#sec-data}
 
-# Discussion
+```{r}
+#| include: false
+#| echo: false
+#| warning: false
+#| message: false
 
-## First discussion point {#sec-first-point}
+data <- read_csv("../data/analysis_data/analysis_data.csv")
+```
 
-## Second discussion point
+## Methodology
+The data used in this paper was gathered from the MoMA Artworks dataset on Github which is supplemented by the MoMA Collection dataset hosted on Zenodo [@citeMoMA]. The Artworks dataset was analyzed using the R programming language [@citeR] and essential packages from `tidyverse` [@citeTidyverse], specifically `dplyr` [@citeDplyr] and `tibble` [@citeTibble], for efficient data manipulation. The `janitor` package [@citeJanitor] facilitated data cleaning by tidying variable names and removing duplicates. For visualizations, `ggplot2` [@citeGgplot] was used to create insightful graphics, and `kableExtra` [@citeKableExtra] for stylized data tables. The `here` package [@citeHere] was used for managing file paths and ensuring reproducibility. For modeling, `modelsummary` [@citeModelsummary] and `rstanarm` [@citeRstanarm] were used. Data testing was conducted with the help of `testthat` [@citeTestthat] and the pdf was rendering with the help of `knitr` [@citeKnitr].
 
-## Third discussion point
+## Dataset Source: The Museum of Modern Art Collection 
 
-## Weaknesses and next steps
+The MoMA Collection Artworks dataset is a record of all artworks that have been featured in the museum since its first acquisition on November 19, 1929. It is updated automatically via their internal system and was last updated on March 7, 2024 following an acquisition of 123 new artworks. A total of 153,687 artworks are included in the MoMA Collection Artworks dataset, 99,389 of which have been cataloged by MoMA curators. The dataset includes 30 variables, many of which could have been included in the analysis but was narrowed down to 3 variables that could correlate with well with the area of an artwork [@citeMoMA].
+
+## Variable Selection Justifications
+Gender was picked as one of the predictor variables because gender of an artist can influence artwork size. For example, historically, access to resources, training, and spaces where large-scale works could be created and displayed were often restricted based on gender. Male artists, for instance, had greater access to larger studios or more patronage to undertake ambitious projects, which could lead to larger artwork sizes. Conversely, female artists, who were often marginalized in the art world, might have adapted their artistic output to smaller, more intimate scales, which were more feasible within their constraints. Analyzing the gender of artists in relation to the size of their artworks could provide insights into the social and economic factors that influenced artists' work and their artistic decisions. This kind of analysis can deepen our understanding of the systemic biases in the art world and highlight the evolution or persistence of these dynamics over time. A visualization of the proportion of artwork size by gender in the MoMA collection can be found here, @fig-gender_prop. Note that in the figure, Gender is shown as male, female, or other (all non-gender binary genders grouped together). While this was done to make the figure easier to digest visually the model uses the actual distribution of gender in the dataset which can be found in @tbl-gender_var.
+
+```{r}
+#| include: false
+#| echo: false
+#| warning: false
+#| message: false
+
+gender_area <- data %>%
+  mutate(
+    AreaBucket = case_when(
+      Area <= 100 ~ "<1",
+      Area > 100 & Area <= 1000 ~ "1-10",
+      Area > 1000 & Area <= 5000 ~ "10-50",
+      Area > 5000 & Area <= 25000 ~ "50-250",
+      Area > 25000 & Area <= 50000 ~ "250-500",
+      Area > 50000 & Area <= 100000 ~ "500-1000",
+      Area > 100000 & Area <= 500000 ~ "1000-5000",
+      Area > 500000 & Area <= 1000000 ~ "5000-10000",
+      Area > 1000000 ~ "10000+"
+    ),
+    AreaBucket = factor(
+      AreaBucket,
+      levels = c(
+        "<1",
+        "1-10",
+        "10-50",
+        "50-250",
+        "250-500",
+        "500-1000",
+        "1000-5000",
+        "5000-10000",
+        "10000+"
+      )
+    )
+  ) %>%
+  group_by(AreaBucket) %>%
+  summarise(
+    "Male" = sum(Gender == "male")/n(),
+    "Female" = sum(Gender == "female")/n(),
+    "Other" = sum(Gender != "male" & Gender != "female")/n(),
+  )
+
+gender_area <- reshape2::melt(gender_area, id.vars = "AreaBucket")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-gender_prop
+#| fig-cap: Proportion of Artwork Size by Gender in the MoMA Collection
+
+ggplot(gender_area, aes(x = "", y = value, fill = variable)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y") + 
+  scale_fill_manual(values = c("Male" = "#2986cc", "Female" = "#c90076", "Other" = "#d4ab31" )) +
+  labs(y = "Proportion of Artwork Size (square cm) by Gender", x = "", fill = "Year Bucket",
+       title = "Proportion of Artwork Size (square cm) by Gender") +
+  facet_wrap(~AreaBucket) + 
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        )
+```
+
+Nationality was picked as one of the predictor variables because the nationality of an artist can reflect a variety of economic, cultural, and material conditions that differ across countries and influence the scale at which artists work. Artists from countries with robust funding for the arts, access to large studio spaces, and significant commercial or state support might produce larger artworks. These factors often allow for ambitious projects that require more space and resources. In contrast, artists from regions with limited access to materials and funding might focus on smaller-scale works, which are more practical under constrained conditions. Moreover, cultural factors linked to nationality can play a crucial role. Some cultures might emphasize grand, expansive artistic expressions as a reflection of national pride or cultural heritage, while others might prioritize intimacy, detail, and small-scale craftsmanship. Analyzing how nationality correlates with the size of artworks at MoMA can uncover patterns that tell stories of economic disparity, cultural emphasis, and resource availability. This form of analysis not only enhances our understanding of the art itself but also opens up discussions about global equity and the diversity of artistic expression across different cultural landscapes. A sample of 10 nationalities can be observed in @tbl-nationality_var.
+
+Year of completetion was picked as one of the predictor variables because the year an artwork was completed can influence artwork size. The year of completion serves as a reflection of the artistic, cultural, and technological era in which artists were working, affecting the scale and ambitions of their projects. Over different periods, artistic movements and styles have emphasized varying scales and forms. For instance, monumental public art and large-scale abstract expressions were particularly prominent during the mid-20th century, reflecting post-war optimism and the availability of new spaces and materials. Conversely, earlier or later periods might show a preference for smaller, more detailed works due to economic conditions, material shortages, or shifts in consumer and public tastes. Technological advancements also play a significant role. The development of new materials and tools can enable larger or more intricate artworks. For example, the introduction of acrylic paints or metal welding techniques opened up new possibilities for size and form in sculpture and painting. This approach not only enhances our appreciation of individual artworks but also provides a broader understanding of art's evolution within its historical and cultural framework. A visualization of the proportion of artwork size by gender in the MoMA collection can be found here, @fig-year_prop.
 
 \newpage
 
-\appendix
+```{r}
+#| include: false
+#| echo: false
+#| warning: false
+#| message: false
 
-# Appendix {-}
+year_bucket_area <- data %>%
+  mutate(
+    AreaBucket = case_when(
+      Area <= 100 ~ "<1",
+      Area > 100 & Area <= 1000 ~ "1-10",
+      Area > 1000 & Area <= 5000 ~ "10-50",
+      Area > 5000 & Area <= 25000 ~ "50-250",
+      Area > 25000 & Area <= 50000 ~ "250-500",
+      Area > 50000 & Area <= 100000 ~ "500-1000",
+      Area > 100000 & Area <= 500000 ~ "1000-5000",
+      Area > 500000 & Area <= 1000000 ~ "5000-10000",
+      Area > 1000000 ~ "10000+"
+    ),
+    AreaBucket = factor(
+      AreaBucket,
+      levels = c(
+        "<1",
+        "1-10",
+        "10-50",
+        "50-250",
+        "250-500",
+        "500-1000",
+        "1000-5000",
+        "5000-10000",
+        "10000+"
+      )
+    )
+  ) %>%
+  group_by(AreaBucket) %>%
+  summarise(
+    "1700 or earlier" = sum(YearBucket == "1700 or earlier")/n(),
+    "1701-1750" = sum(YearBucket == "1701-1750")/n(),
+    "1751-1800" = sum(YearBucket == "1751-1800")/n(),
+    "1801-1850" = sum(YearBucket == "1801-1850")/n(),
+    "1851-1900" = sum(YearBucket == "1851-1900")/n(),
+    "1901-1950" = sum(YearBucket == "1901-1950")/n(),
+    "1951-2000" = sum(YearBucket == "1951-2000")/n(),
+    "2001-Present" = sum(YearBucket == "2001-Present")/n()
+  )
 
+year_bucket_area <- reshape2::melt(year_bucket_area, id.vars = "AreaBucket")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-year_prop
+#| fig-cap: Proportion of Artwork Size by Year in the MoMA Collection
+
+ggplot(year_bucket_area, aes(x = "", y = value, fill = variable)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y") + 
+  scale_fill_manual(values = c("1700 or earlier" = "#c45161", "1701-1750" = "#e094a0", "1751-1800" = "#f2b6c0", "1801-1850" = "#f2dde1", "1851-1900" = "#cbc7d8", "1901-1950" = "#8db7d2", "1951-2000" = "#5e62a9", "2001-Present" = "#434279" )) +
+  labs(y = "Proportion of Artwork Size (square cm) by Year", x = "", fill = "Year Bucket",
+       title = "Proportion of Artwork Size (square cm) by Year") +
+  facet_wrap(~AreaBucket) + 
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        )
+```
+
+## Analysis of Variance
+
+The following is the results of having conducted an Analysis of Variance (ANOVA) on the dataset to examine the effects of Gender, Nationality, and Year on the variable Area.
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: tbl-anova_test
+#| tbl-cap: Anova Test for Gender, Nationality, and Year
+data %>%
+  aov(Area ~ Gender + Nationality + Year, data = .) %>%
+  tidy() %>% 
+  kable()
+```
+
+1. **F-statistic**: This value measures how much the means of the different groups vary compared to the variation within the groups themselves. A higher F-statistic suggests that the group means are very different in the context of the noise (variability) within each group, which implies a stronger effect of that factor.
+
+2. **P-value**: This value indicates the probability of observing the results, or results more extreme, if the null hypothesis is true (the null hypothesis typically states that there is no effect). A very small p-value (typically less than 0.05) suggests that the observed effect is statistically significant, meaning it is unlikely to have occurred by chance.
+
+The results of the ANOVA:
+
+- Year has an F-statistic of 469 and a p-value of \(1.01 \times 10^{-103}\) rounded to 0. This extremely high F-statistic, combined with an extremely low p-value, strongly suggests that the year has a very powerful effect on Area. 
+- Gender and Nationality also show significant effects, but the magnitude of their F-statistics (78.9 for Gender and 4.29 for Nationality) and their corresponding p-values (\(8.14 \times 10^{-99}\) and \(9.83 \times 10^{-48}\), respectively with both rounded to 0) indicate that while significant, their effects are less dramatic than that of Year.
+
+## Measurement
+
+```{r, echo=FALSE}
+#| label: tbl-head_var
+#| tbl-cap: Sample of Data
+head(data, 5) %>% 
+  select(Gender, Nationality, Year, Area) %>% 
+  rename(
+    "Area (cm^2)" = Area
+  ) %>%
+  kable()
+```
+
+MoMA employs a well-thought out process for collecting and documenting information about the artworks in its collection. This process involves several stages, beginning with the acquisition of an artwork, during which detailed records are created. Information such as artist details, the title of the work, the year of creation, medium, dimensions, and provenance are systematically recorded. The museum's curatorial staff, alongside conservation experts, assesses and measures the artworks using standardized methods to ensure accuracy and consistency across the collection. These measurements include physical dimensions, which are particularly crucial for planning exhibitions and storage. Additionally, MoMA uses advanced digital tools to catalog and manage its collection data. This data is then maintained in a comprehensive, internally managed database that is periodically updated and reviewed to reflect new acquisitions, research, and changes in the conservation status of the artworks. This approach to data management not only supports the museum's operational needs but also contributes to scholarly research, allowing for detailed analysis and interpretation of trends and patterns within the collection.
+
+Gender of the artist was taken directly from MoMA's records. In the case of missing data, the value "Unknown" was assigned. In the case of multiple artists working on the same artwork: if they were all of the same gender, then that gender was recorded, otherwise the walue "Multiple Artists" was recorded.
+
+Nationality of the artist was taken directly from MoMA's records. In the case of missing data, the value "Unknown" was assigned. In the case of multiple nationalities working on the same artwork: if they were all the same, then that nationality was recorded, otherwise the walue "Multiple Nationalities" was recorded.
+
+Year of completion was adapted from MoMA's recorded variable, Date, which represented the dates through which the artist(s) worked on the artwork. Year of completion is the maximum year within the Date interval. 
+
+Area was calculated from MoMA's records of Height and Width (both recorded in centimeters). It is important to note that this study is only interested in artwork that is for the most part 2-dimensional, therefore all artworks missing values for height or width or with values for depth were not included.
+
+# Model {#sec-model}
+```{r}
+#| echo: false
+#| eval: true
+#| warning: false
+#| message: false
+
+model <-
+  readRDS("../models/model.rds")
+```
+
+While conducting the data analysis, a significant relationship between an artworks area the following three variables was observed: the artist's gender, the artist's nationality, and the year the artwork was completed. To explore this relationship further and predict future trends the size of artworks in the MoMA collection, a linear regression model was constructed.
+
+The model was formalized as follows:
+
+\begin{equation}
+Y_{i} = \beta_{0}+\beta_{1}Gender_{i}+\beta_{2}Nationality_{i}+\beta_{3}Year_{i}
+\end{equation}
+
+In the model:
+
+-   $Y_{i}$ represents the area of an artwork created with the characteristics $i$.
+-   $\beta_{0}$ is the intercept, indicating the estimated area of an artwork without any known characteristics.
+-   $\beta_{1}$ is the coefficient for the gender, capturing the rate of change of an artwork's area across genders.
+-   $\beta_{2}$ is the coefficient for the nationality, capturing the rate of change of an artwork's area across nationalities.
+-   $\beta_{3}$ is the coefficient for the year, capturing the rate of change of an artwork's area as time passes.
+
+The independent variables in the model are Gender, Nationality, and Year. The dependent variable is the Area, denoting area of the artwork in centimeters squared.
+
+## Model Justification
+In this study, linear regression serves as the primary statistical tool to analyze the factors influencing artwork size within the Museum of Modern Art (MoMA) collection. The choice of linear regression is driven by its ability to provide clear, interpretable results regarding the relationship between multiple independent variables (artist gender, nationality, and year of completion) and a continuous dependent variable (artwork size). This model enables the quantification of how much each predictor variable affects the dependent variable when all other variables are held constant, offering precise insights into individual and collective impacts.
+
+One of the most significant advantages of linear regression is its straightforward interpretability. The model's coefficients can be directly understood as the effect size of each independent variable on the dependent variable. This clarity is crucial for stakeholders at MoMA, including curators and educators, who rely on actionable insights to make informed decisions about exhibitions and acquisitions.
+
+Linear regression not only identifies relationships between variables but also quantifies them. This quantification is essential for evaluating the scale of impact that factors like gender or nationality have on the size of artworks. Such quantitative assessments are invaluable in a museum setting, where space management and exhibit design are based on precise dimensions.
+
+The model can adjust for multiple confounding variables simultaneously, allowing for a more accurate estimation of the effect of each variable. This aspect is particularly important in the complex environment of art collections, where many overlapping cultural, historical, and social factors can influence artistic outcomes.
+
+The regression model's fit and predictive power are assessed through the R-squared and adjusted R-squared values, providing an estimate of how much of the variance in artwork sizes can be explained by the variables considered. While these values are typically lower in social sciences and humanities due to the complexity and multiplicity of influencing factors, they are still useful for gauging the effectiveness of the model. A significant F-statistic further validates that the model captures essential dynamics, even if the explanatory power is modest.
+
+While linear regression offers numerous advantages, it also comes with limitations. The assumption of a linear relationship may not fully capture the complexities of art dimensions influenced by non-linear interactions among variables. Additionally, the potential for omitted variable bias exists if important influencers are not included in the model. These limitations necessitate a cautious interpretation of the results and suggest areas for further methodological enhancement in future studies.
+
+## Model Prediction Example
+Following the construction and validation of the linear regression model, which estimates area of an artwork as a function of artist's gender, artist's nationality, and year of completion, it is possible to forecast the amount of space a curator needs for a future acquisition. @fig-prediction1, juxtaposed against observed data, offers a  visualization of the expected area of artwork created by Russian female artists over different time periods. @fig-prediction2, juxtaposed against observed data, offers a visualization of the expected area of artwork created by Swedish male artists over different time periods.
+
+```{r fig.width=6, fig.height=3}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-prediction1
+#| fig-cap: Russian Female Artist Predictions
+
+rus_females <- data %>% 
+  filter(
+    Nationality == "Russian",
+    Gender == "female"
+  )
+
+set.seed(853)
+future <- data.frame(
+  Gender = sample(c("female"), size = 2, replace = TRUE),
+  Nationality = sample(c("Russian"), size = 2, replace = TRUE),
+  Year = c(min(rus_females$Year), max(rus_females$Year))
+)
+
+predictions <- predict(model, newdata = future)
+
+combined_data <- rbind(data.frame(Year = rus_females$Year, Area = rus_females$Area, Type = "Observed"),
+                       data.frame(Year = future$Year, Area = predictions, Type = "Predicted"))
+
+ggplot(combined_data, aes(x = Year, y = Area, color = Type, group = Type)) +
+  geom_line() +
+  geom_point(data = combined_data[combined_data$Type == "Observed", ], shape = 16, size = 2) +
+  labs(x = "Year", y = "Artwork Size (sq cm)", title = "Russian Female Artist Artwork Size Predictions") +
+  scale_color_manual(values = c("Observed" = "black", "Predicted" = "#c90076")) +
+  theme_minimal() +
+  theme(legend.position = "top") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+@fig-prediction1 predicts that for Russian female artists, the area of their artwork has increased over time, which is visible in the graph, especially in recent artworks. 
 
 \newpage
 
+```{r fig.width=6, fig.height=3}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-prediction2
+#| fig-cap: Swedish Male Artist Predictions
 
-# References
+swe_males <- data %>% 
+  filter(
+    Nationality == "Swedish",
+    Gender == "male"
+  )
+
+set.seed(853)
+future <- data.frame(
+  Gender = sample(c("male"), size = 10, replace = TRUE),
+  Nationality = sample(c("Swedish"), size = 10, replace = TRUE),
+  Year = c(min(swe_males$Year), max(swe_males$Year))
+)
+
+predictions <- predict(model, newdata = future)
+
+combined_data <- rbind(data.frame(Year = swe_males$Year, Area = swe_males$Area, Type = "Observed"),
+                       data.frame(Year = future$Year, Area = predictions, Type = "Predicted"))
+
+ggplot(combined_data, aes(x = Year, y = Area, color = Type, group = Type)) +
+  geom_line() +
+  geom_point(data = combined_data[combined_data$Type == "Observed", ], shape = 16, size = 2) +
+  labs(x = "Year", y = "Artwork Size (sq cm)", title = "Swedish Male Artist Artwork Size Predictions") +
+  scale_color_manual(values = c("Observed" = "black", "Predicted" = "#2986cc")) +
+  theme_minimal() +
+  theme(legend.position = "top") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+@fig-prediction2 predicts that for Swedish male artists, the area of their artwork has increased over time, which is visible in the graph, especially in recent artworks. Notice, that this line fits more accurately to the observed trend than that of Russian female artists in @fig-prediction1, prompting us to inquire as to what might have caused Russian female artists to have so many artworks of over 250 square meters in size which act as outliers. 
+
+### Shiny Web App: MoMA Artwork Size Model Prediction Explorer
+
+In our Shiny Web App, you have the flexibility to choose specific Gender and Nationality variables for detailed exploration. Examples of the types of analyses you can perform are illustrated in @fig-prediction1 and @fig-prediction2. Each graph displayed on the app is complemented by a comprehensive data table, which includes all graphed values clearly marked as either observed or predicted. This feature allows for an in-depth understanding of the data trends and model predictions based on your selections.
+
+The Shiny Web App can be found here: 
+
+# Results {#sec-results}
+
+## Model Results and Statistical Significance
+
+@tbl-model_results examines the effects of gender, nationality, and year on artwork size. 
+
+The linear regression model implemented to investigate the determinants of artwork size within the Museum of Modern Art (MoMA) collection highlighted significant variations attributable to the artist's gender, nationality, and the year of completion. The results provide insights into how these factors collectively and individually influence the physical dimensions of artworks.
+
+The model identified notable differences in artwork size associated with the gender of the artist. Male artists and artists identified as part of multiple artists groups tend to create smaller artworks compared to the baseline category (female artists), with coefficients of -4090.29 and -1582.77 respectively, both statistically significant with p-values near zero. This finding challenges traditional perceptions that associate male artists with larger canvas sizes. In contrast, gender non-conforming and unknown gender categories did not show a statistically significant impact, which may be reflective of their smaller representation in the dataset or other sociocultural factors not captured by the model.
+
+Significant variances were also observed across artists' nationalities. Algerian and Ghanaian artists are associated with significantly larger artworks, with coefficients of 109109.33 and 95722.19, respectively, both with p-values indicating strong statistical significance. This may suggest a cultural or regional preference for larger-scale artworks in these countries. Conversely, most other nationalities, including American, did not demonstrate a significant deviation from the baseline, which could indicate a more varied approach to artwork size that transcends national boundaries.
+
+The coefficient for the year of completion was positive (66.13), indicating that artwork sizes have generally increased over the years. This trend is statistically significant with a p-value near zero, suggesting a steady evolution in the scale of artworks possibly due to changes in artistic styles, available technologies, and evolving cultural preferences that favor more immersive art experiences.
+
+## Model Fit and Statistical Significance
+
+- **Residual Standard Error (RSE)**: 29,290 (sq cm).
+- **Degrees of Freedom**: 101,964.
+- **Multiple R-squared (R²)**: 0.01374.
+- **Adjusted R-squared**: Adjusted to 0.0126.
+- **F-statistic and its p-value**: The F-statistic is 12.14, with a p-value less than 2.2e-16.
+
+The overall fit of the model, as indicated by the R-squared value (0.01374), suggests that while the model accounts for some variability in artwork size, a large portion remains unexplained by the variables included. This underscores the complexity of artistic dimensions and the potential influence of unaccounted factors. The Adjusted R-squared value (0.0126) slightly lower than the R-squared, reflects the adjustment for the number of predictors used, providing a more accurate estimate of the model's explanatory power.
+
+The Residual Standard Error (RSE) was 29,290, suggesting that the typical prediction by the model could be off by approximately 29,290 square centimeters. Considering the large scale of some artworks, this error margin, while significant, is understandable given the vast diversity in artwork sizes.
+
+The F-statistic (12.14) with a p-value less than 2.2e-16 strongly indicates that the model is statistically significant. This implies that the predictors, as a group, have a meaningful impact on artwork size, despite the relatively low explanatory power of individual factors.
+
+# Discussion {#sec-discussion}
+This study provides a systematic exploration of the factors influencing artwork size within the Museum of Modern Art (MoMA) collection, with significant findings regarding the impact of artist gender, nationality, and year of completion. The implications of these results are profound, offering insights into the interplay between artistic creation and broader socio-cultural contexts.
+
+## Findings
+Using a linear regression model, this paper analyzed the MoMA collection dataset with the intent of revealing the differences in artwork size attributable to artist's gender, artist's nationality, and the year of completion, hoping that the results would highlight significant patterns that may reflect broader socio-cultural dynamics within the art world.
+
+The regression results indicate significant variations in artwork size based on the gender of the artist. Notably, artworks by male artists are, on average, smaller in area compared to the baseline, with a statistically significant negative coefficient. This finding is intriguing as it challenges some conventional expectations about the representation of gender in art. This could reflect a shift where male artists are more engaged in mediums or styles that tend to produce smaller works, or it could reflect curatorial choices within institutions that collect and catalog such data. The non-significant results for gender non-conforming and non-binary artists, while not statistically enlightening, open a conversation about the representation and visibility of non-traditional gender identities in art collections. Their smaller sample sizes might contribute to the lack of statistical significance, highlighting a potential area for further focused research and acquisition efforts. Perhaps, MoMA and similar institutions could benefit from diversifying their acquisitions to include more varied gender representations, which could alter future analyses.
+
+Nationality proved to be a less important predictor of artwork size, with some variances observed across different national origins. Algerian and Ghanaian artists, for example, tend to create significantly larger artworks. This might be reflective of specific cultural traditions or artistic practices prevalent in these countries that favor large-scale works. Perhaps large mural traditions or monumental sculptures prominent in these cultures influenced the size of contemporary artworks. On the other hand, American artists, despite their prominence in global art narratives, did not show a significant difference from the baseline, suggesting a possible diversity in styles and sizes that neutralizes any clear national tendencies. The substantial sizes of artworks by Cuban artists, significantly larger than many other nationalities, could be interpreted within the context of the nation’s rich history in large-scale public art and muralism. These findings suggest that national trends in art size can be reflective of deeper cultural, historical, and perhaps political influences that shape artistic expression.
+
+One of the most striking findings is the positive coefficient for the year, indicating that artworks have progressively increased in size over the years covered by the dataset. The increase in artwork size over the years could be linked to technological advancements that allow for larger installations, increased availability of large exhibition spaces, and perhaps a cultural trend towards more immersive art experiences. This trend is significant as it underscores the need to adapt space and logistics planning to accommodate larger artworks.
+
+The study’s results can help museum curators and art historians in planning exhibitions and expanding collections with a more nuanced understanding of trends in artwork size. By recognizing the factors influencing artwork dimensions, museums can better tailor their spaces to the evolving nature of contemporary art. Additionally, these findings can enrich discussions about representation in art collections, pushing for more inclusive practices that reflect the true diversity of artistic expression across different genders and nationalities.
 
 
+## Study Weaknesses
+The examination of artwork size through regression analysis provides valuable insights into the influence of gender, nationality, and time on artistic output. However, this study, like any empirical investigation, encounters several limitations that may affect the interpretation and generalizability of its findings.
+
+The primary limitations of this study stem from its reliance on linear regression, which assumes linear relationships between variables. Artistic outcomes are often the result of complex, non-linear interactions that this model may not fully capture. The model’s low R-squared value indicates that other unaccounted-for variables, such as the medium of the artwork(e.g., sculpture, painting, digital), the intended installation space, or even the economic resources available to the artist significantly impact the size of the artwork but were not considered in the model. The exclusion of these factors can lead to omitted variable bias, where the effects of included variables are inaccurately estimated because they may absorb the influence of omitted factors.
+
+Additionally, the study is constrained by the data provided by MoMA, which may not uniformly cover all artists or artworks equally, leading to potential biases in representation or emphasis on certain types or styles of art. The absence of significant findings for some categories could also be due to smaller sample sizes rather than a true lack of effect.
+
+## Next Steps
+The results of this analysis not only shed light on the practical aspects of art creation and collection but also open various avenues for further research. Understanding why certain genders or nationalities produce art of different sizes could lead to deeper insights into the socio-economic and cultural contexts that influence artistic expression. Furthermore, examining these trends over time could help predict future developments in the art world.
+
+The implications of these findings are crucial for curators, historians, and cultural theorists who seek to understand the dynamics of artistic representation and its evolution. By recognizing the patterns in artwork size related to gender, nationality, and time, the art community can strive towards more inclusive and representative collection and exhibition practices. Next steps include looking at how this paper's limitations can be responded to in future research. The use of non-linear models or machine learning techniques that can handle complex interactions and non-linear relationships could be employed could greatly improve this study. Future studies should also include additional variables that might influence artwork size, such as art medium, the socio-economic background of the artist, and the context of the artwork's creation. By addressing the limitations of this study, future research can enhance our understanding of the dynamics that influence artistic expression and further enrich the dialogue within art history and cultural studies. This approach will also bolster the robustness of the findings, ensuring that they reflect a more comprehensive view of the artistic landscape.
+
+\newpage
+# Appendix {#sec-appendix}
+```{r, echo=FALSE}
+#| label: tbl-gender_var
+#| tbl-cap: Sample of Gender Variable Values How Many Instances of Each Are in the Dataset
+
+artworks_gender <- data %>%
+  group_by(Gender) %>% count()
+
+artworks_gender %>% 
+  kable()
+```
+
+```{r, echo=FALSE}
+#| label: tbl-nationality_var
+#| tbl-cap: Sample of Nationality Variable Values
+
+artworks_nationality <- data %>%
+  select(Nationality) %>%
+  filter(Nationality != "Unknown") %>% distinct()
+
+head(artworks_nationality, 10) %>% 
+  kable()
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| label: tbl-model_results
+#| tbl-cap: "Model of Artwork Size based on gender, nationality, and year completed"
+#| warning: false
+#| fig-height: 5
+#| scale: 
+
+results <- tidy(model)
+
+kable(results, 
+      caption = "Variable Coefficients", 
+      digits = 2) 
+```
+
+\newpage
+# References {#sec-references}

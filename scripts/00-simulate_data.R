@@ -92,6 +92,7 @@ simulation_data <- tibble(
   gender = sample(gender_options, size = num_obs, replace = TRUE),
   year = year,
   classification = sample(classification_options, size = num_obs, replace = TRUE),
+  onview = sample(c(0:1), size = num_obs, replace = TRUE),
   height = height,
   width = width,
   area = height * width
