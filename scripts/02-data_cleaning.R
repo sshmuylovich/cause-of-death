@@ -17,11 +17,7 @@ raw_data <- read_csv("data/raw_data/Artworks.csv")
 
 # Select columns for analysis
 cleaned_data <- raw_data %>%
-  dplyr::select(Title, Artist, Nationality, Gender, Date, Classification, DateAcquired, Cataloged, "Height (cm)", "Width (cm)") %>%
-  rename(
-    Height = "Height (cm)",
-    Width = "Width (cm)"
-  ) %>%
+  dplyr::select(ObjectID, Title, Artist, Nationality, Gender, Date, "Height (cm)", "Width (cm)") %>%
   mutate(
     Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Nationality = lapply(Nationality, unique), # Apply unique to remove duplicates
@@ -37,7 +33,7 @@ cleaned_data <- raw_data %>%
     Gender = str_extract_all(Gender, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Gender = lapply(Gender, unique), # Apply unique to remove duplicates
     Gender = sapply(Gender, paste, collapse = ", "), # Join them into a single string
-    Gender = ifelse(str_count(Gender, "\\(") > 1, "multiple Genders", gsub("[()]", "", Gender)),
+    Gender = ifelse(str_count(Gender, "\\(") > 1, "multiple genders", gsub("[()]", "", Gender)),
     Gender = gsub("[()]", "", Gender),
     Gender = ifelse(Gender == "", "unknown", Gender),
     Gender = ifelse(Gender == "NA", "unknown", Gender),
@@ -69,26 +65,33 @@ cleaned_data <- raw_data %>%
     ),
     Date = coalesce(Date, "Unknown"),
   ) %>%
+  filter(
+    Date != "Unknown"
+  ) %>%
+  mutate(
+    Date = as.integer(Date)
+  ) %>%
+  rename(
+    Date = Year,
+  ) %>%
   mutate(
     Title = coalesce(Title, "Unknown"),
     Artist = coalesce(Artist, "Unknown"),
-    DateAcquired = as.character(DateAcquired), # Convert DateAcquired to character
-    DateAcquired = coalesce(DateAcquired, "Unknown")
   ) %>%
-  filter(across(everything(), ~ !is.na(.)))
-
-# Check to see if Dates translated correctly
-test_data <- cleaned_data
-
-test_data <- test_data %>% filter(DateAcquired != "Unknown")
-test_data$DateAcquired <- as.Date(test_data$DateAcquired, format = "%Y-%m-%d")
-
-test_data <- test_data %>% filter(Date != "Unknown")
-test_data$Date <- as.integer(test_data$Date)
+  filter(across(everything(), ~ !is.na(.))) %>%
+  rename(
+    Height = "Height (cm)",
+    Width = "Width (cm)"
+  ) %>%
+  filter(
+    Height > 0 & Width > 0
+  ) %>%
+  mutate(
+    Area = Height * Width
+  )
 
 #### Save data ####
 write_csv(cleaned_data, "data/analysis_data/analysis_data.csv")
-write_csv(test_data, "data/analysis_data/analysis_data_date_test.csv")
 
 # Cannot save as parquet do to C++ compiler compatability error, included code that would be used otherwise
 # write_parquet(cleaned_data, "data/analysis_data/analysis_data.parquet")
