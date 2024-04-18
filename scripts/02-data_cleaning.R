@@ -18,6 +18,10 @@ raw_data <- read_csv("data/raw_data/Artworks.csv")
 # Select columns for analysis
 cleaned_data <- raw_data %>%
   dplyr::select(Title, Artist, Nationality, Gender, Date, Classification, DateAcquired, Cataloged, "Height (cm)", "Width (cm)") %>%
+  rename(
+    Height = 'Height (cm)',
+    Width = 'Width (cm)'
+  ) %>%
   mutate(
     Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Nationality = lapply(Nationality, unique), # Apply unique to remove duplicates
