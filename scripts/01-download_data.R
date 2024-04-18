@@ -5,7 +5,7 @@
 # Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
 # Pre-requisites: Install tidyverse and readr packages.
-
+# Other Information: Code is appropriately styled using styler
 
 #### Workspace setup ####
 library(tidyverse)
