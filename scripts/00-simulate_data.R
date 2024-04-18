@@ -1,6 +1,6 @@
 #### Preamble ####
 # Purpose: Simulates a dataset of artwork at MOMA with the following variables:
-#     Title, Artist, Nationality, Gender, Date, Classification, Date Acquired, Cataloged, Height, and Width
+#     ObjectID, Title, Artist, Nationality, Gender, Year, Height, Width, and Area
 # Author: Sima Shmuylovich
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
@@ -16,6 +16,8 @@ library(randomNames)
 set.seed(853)
 
 num_obs <- 1000
+
+id <- c(1:1000)
 
 chars <- c(0:9, letters, LETTERS)
 
@@ -60,41 +62,20 @@ nationality_options <- c(
 
 gender_options <- c("male", "female")
 
-date <- sample(1500:2023, size = num_obs, replace = TRUE)
-
-classification_options <- c(
-  "Architecture", "Mies van der Rohe Archive", "Design",
-  "Illustrated Book", "Print", "Drawing",
-  "Periodical", "Graphic Design", "Multiple",
-  "Installation", "Photograph", "Painting",
-  "Ephemera", "Photography Research/Reference", "Video",
-  "Media", "Publication", "Poster",
-  "Sculpture", "Film", "Work on Paper",
-  "Audio", "Performance", "(not assigned)",
-  "Textile", "Notebook", "Correspondence",
-  "Collage", "Document", "Film (object)",
-  "Frank Lloyd Wright Archive", "Furniture and Interiors", "Digital",
-  "Software", "Moving Image", "Architectural Model",
-  "News Clipping"
-)
-
-date_acquired <- sample(seq(as.Date("1500-01-01"), as.Date("2023-12-31"), by = "day"), size = num_obs, replace = TRUE)
-
-cataloged_options <- c("Y", "N")
+year <- sample(1500:2023, size = num_obs, replace = TRUE)
 
 height <- round(runif(n = num_obs, min = 0.01, max = 2000), 2)
 
 width <- round(runif(n = num_obs, min = 0.01, max = 2000), 2)
 
 simulation_data <- tibble(
+  id = id,
   title = title,
   artist = artist,
   nationality = sample(nationality_options, size = num_obs, replace = TRUE),
   gender = sample(gender_options, size = num_obs, replace = TRUE),
-  date = date,
-  classification = sample(classification_options, size = num_obs, replace = TRUE),
-  date_acquired = date_acquired,
-  cataloged = sample(cataloged_options, size = num_obs, replace = TRUE),
+  year = year,
   height = height,
   width = width,
+  area = height * width
 )
