@@ -4,8 +4,8 @@
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: Obtain the raw data provided here https://github.com/MuseumofModernArt/collection.git
-# Other Information: Code is appropriately styled using styler
+# Pre-requisites: Install tidyverse and dplyr packages. 
+# Pre-requisites: Run 01-download_data.R # Other Information: Code is appropriately styled using styler
 
 #### Workspace setup ####
 library(tidyverse)
@@ -19,8 +19,8 @@ raw_data <- read_csv("data/raw_data/Artworks.csv")
 cleaned_data <- raw_data %>%
   dplyr::select(Title, Artist, Nationality, Gender, Date, Classification, DateAcquired, Cataloged, "Height (cm)", "Width (cm)") %>%
   rename(
-    Height = 'Height (cm)',
-    Width = 'Width (cm)'
+    Height = "Height (cm)",
+    Width = "Width (cm)"
   ) %>%
   mutate(
     Nationality = str_extract_all(Nationality, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
@@ -29,16 +29,19 @@ cleaned_data <- raw_data %>%
     Nationality = ifelse(str_count(Nationality, "\\(") > 1, "Multiple Nationalities", gsub("[()]", "", Nationality)),
     Nationality = gsub("[()]", "", Nationality),
     Nationality = ifelse(Nationality == "", "Unknown", Nationality),
+    Nationality = ifelse(Nationality == "Nationality unknown", "Unknown", Nationality),
+    Nationality = ifelse(Nationality == "NA", "Unknown", Nationality),
     Nationality = coalesce(Nationality, "Unknown")
   ) %>%
   mutate(
     Gender = str_extract_all(Gender, "\\(([^)]+)\\)"), # Extracts text within each pair of parentheses
     Gender = lapply(Gender, unique), # Apply unique to remove duplicates
     Gender = sapply(Gender, paste, collapse = ", "), # Join them into a single string
-    Gender = ifelse(str_count(Gender, "\\(") > 1, "Multiple Genders", gsub("[()]", "", Gender)),
+    Gender = ifelse(str_count(Gender, "\\(") > 1, "multiple Genders", gsub("[()]", "", Gender)),
     Gender = gsub("[()]", "", Gender),
-    Gender = ifelse(Gender == "", "Unknown", Gender),
-    Gender = coalesce(Gender, "Unknown")
+    Gender = ifelse(Gender == "", "unknown", Gender),
+    Gender = ifelse(Gender == "NA", "unknown", Gender),
+    Gender = coalesce(Gender, "unknown")
   ) %>%
   filter(
     str_detect(Date, "^\\d{4}$") | # Check for "YYYY"
@@ -74,8 +77,19 @@ cleaned_data <- raw_data %>%
   ) %>%
   filter(across(everything(), ~ !is.na(.)))
 
+# Check to see if Dates translated correctly
+test_data <- cleaned_data
+
+test_data <- test_data %>% filter(DateAcquired != "Unknown")
+test_data$DateAcquired <- as.Date(test_data$DateAcquired, format = "%Y-%m-%d")
+
+test_data <- test_data %>% filter(Date != "Unknown")
+test_data$Date <- as.integer(test_data$Date)
+
 #### Save data ####
 write_csv(cleaned_data, "data/analysis_data/analysis_data.csv")
+write_csv(test_data, "data/analysis_data/analysis_data_date_test.csv")
 
 # Cannot save as parquet do to C++ compiler compatability error, included code that would be used otherwise
 # write_parquet(cleaned_data, "data/analysis_data/analysis_data.parquet")
+
