@@ -28,3 +28,7 @@ Aspects of the code were written with the help of the auto-complete tool, Codriv
 - [ ] Remove files that you're not using
 - [ ] Update comments in R scripts
 - [ ] Remove this checklist
+
+## Parquet Issues
+Attempted to use arrow's parquet feature but was met with unexpected difficulties regarding C++ compiler version compatability. The terminal can be found below and a screenshot of the issue is documented in `other/issues`.
+`Error in parquet___WriterProperties___Builder__create() : Cannot call parquet___WriterProperties___Builder__create(). See https://arrow.apache.org/docs/r/articles/install.html for help installing Arrow C++ libraries.`
