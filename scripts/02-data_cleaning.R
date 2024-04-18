@@ -4,7 +4,7 @@
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: Install tidyverse and dplyr packages. 
+# Pre-requisites: Install tidyverse and dplyr packages.
 # Pre-requisites: Run 01-download_data.R # Other Information: Code is appropriately styled using styler
 
 #### Workspace setup ####
@@ -92,4 +92,3 @@ write_csv(test_data, "data/analysis_data/analysis_data_date_test.csv")
 
 # Cannot save as parquet do to C++ compiler compatability error, included code that would be used otherwise
 # write_parquet(cleaned_data, "data/analysis_data/analysis_data.parquet")
-

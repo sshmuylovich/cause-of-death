@@ -4,7 +4,7 @@
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: Install tidyverse and testthat packages. 
+# Pre-requisites: Install tidyverse and testthat packages.
 # Pre-requisites: Run 01-download_data.R and 02-data_cleaning.R
 # Other Information: Code is appropriately styled using styler
 
@@ -17,9 +17,9 @@ library(testthat)
 test_data <- read_csv("../data/analysis_data/analysis_data.csv")
 test_data_date <- read_csv("../data/analysis_data/analysis_data_date_test.csv")
 
-nationality_options <- c("Austrian", "French", "Unknown", "American", "German", "Dutch", "Italian", "Swedish", "Multiple Nationalities", "British", "Japanese", "Argentine", "Brazilian", "Swiss", "Luxembourger", "Spanish", "Iranian", "Canadian", "Finnish", "Danish", 'Moroccan', "Colombian", "Australian", "Hungarian", "Belgian", "Slovenian", "Chilean", "Mexican", "Latvian", "Russian", "Polish", "Czech", "Israeli", "Czechoslovakian", "Croatian", "Norwegian", "Georgian", "Ukrainian", "Cuban", "Romanian", 'Venezuelan', "Greek", "Thai", "Icelandic", "Guatemalan", "Puerto Rican", "Indian", 'Costa Rican', "Uruguayan", 'Ethiopian', "Kuwaiti", "Haitian", "South African", "Zimbabwean", "Ecuadorian", "Portuguese", "Serbian", "Peruvian", "Azerbaijani", "Native American", "Malian", "Irish", "Cambodian", "Turkish", "Bosnian", "Chinese", "Scottish", "Korean", "Canadian Inuit", 'Estonian', "Pakistani", "Bulgarian", "Bolivian", "Panamanian", "Taiwanese", "Paraguayan", "Nicaraguan", "Tunisian", "Sudanese", "Tanzanian", "Senegalese", "Congolese", "New Zealander", "Lebanese", "Kenyan", "Nigerian", "Egyptian", 'Albanian', "Namibian", "Slovak", "Ghanaian", "Lithuanian", 'Ugandan', "Cameroonian", "Malaysian", "Catalan", "Bahamian", "South Korean", "Algerian", "Vietnamese", "Macedonian", "Burkinabé", "Beninese", "Sierra Leonean", "Ivorian", "Sri Lankan", "Emirati", "Salvadoran", "Mozambican", "Welsh", "Iraqi", "Syrian", "Trinidad and Tobagonian", "Indonesian", "Nepali", "West African")
+nationality_options <- c("Austrian", "French", "Unknown", "American", "German", "Dutch", "Italian", "Swedish", "Multiple Nationalities", "British", "Japanese", "Argentine", "Brazilian", "Swiss", "Luxembourger", "Spanish", "Iranian", "Canadian", "Finnish", "Danish", "Moroccan", "Colombian", "Australian", "Hungarian", "Belgian", "Slovenian", "Chilean", "Mexican", "Latvian", "Russian", "Polish", "Czech", "Israeli", "Czechoslovakian", "Croatian", "Norwegian", "Georgian", "Ukrainian", "Cuban", "Romanian", "Venezuelan", "Greek", "Thai", "Icelandic", "Guatemalan", "Puerto Rican", "Indian", "Costa Rican", "Uruguayan", "Ethiopian", "Kuwaiti", "Haitian", "South African", "Zimbabwean", "Ecuadorian", "Portuguese", "Serbian", "Peruvian", "Azerbaijani", "Native American", "Malian", "Irish", "Cambodian", "Turkish", "Bosnian", "Chinese", "Scottish", "Korean", "Canadian Inuit", "Estonian", "Pakistani", "Bulgarian", "Bolivian", "Panamanian", "Taiwanese", "Paraguayan", "Nicaraguan", "Tunisian", "Sudanese", "Tanzanian", "Senegalese", "Congolese", "New Zealander", "Lebanese", "Kenyan", "Nigerian", "Egyptian", "Albanian", "Namibian", "Slovak", "Ghanaian", "Lithuanian", "Ugandan", "Cameroonian", "Malaysian", "Catalan", "Bahamian", "South Korean", "Algerian", "Vietnamese", "Macedonian", "Burkinabé", "Beninese", "Sierra Leonean", "Ivorian", "Sri Lankan", "Emirati", "Salvadoran", "Mozambican", "Welsh", "Iraqi", "Syrian", "Trinidad and Tobagonian", "Indonesian", "Nepali", "West African")
 
-gender_options <- c("male", "female", "multiple Genders",  "unknown", "gender non-conforming", "non-binary", "transgender woman")
+gender_options <- c("male", "female", "multiple Genders", "unknown", "gender non-conforming", "non-binary", "transgender woman")
 
 classification_options <- c(
   "Architecture", "Mies van der Rohe Archive", "Design",
