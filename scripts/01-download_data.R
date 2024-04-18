@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Downloads and saves the data from MOMA's collection GitHub Repository.
+# Purpose: Downloads and saves the data from the Museum of Modern Art's GitHub repo 'collection'.
 # Author: Sima Shmuylovich
 # Date: 18 April 2024
 # Contact: sima.shmuylovich@mail.utoronto.ca
