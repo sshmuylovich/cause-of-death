@@ -13,7 +13,7 @@ library(dplyr)
 
 #### Clean data ####
 # Read data
-raw_data <- read_csv("data/raw_data/Artworks.csv")
+raw_data <- read_csv("data/raw_data/raw_data.csv")
 
 # Select columns for analysis
 cleaned_data <- raw_data %>%
@@ -68,11 +68,8 @@ cleaned_data <- raw_data %>%
   filter(
     Date != "Unknown"
   ) %>%
-  mutate(
-    Date = as.integer(Date)
-  ) %>%
   rename(
-    Year = Date,
+    Year = Date
   ) %>%
   mutate(
     Title = coalesce(Title, "Unknown"),
