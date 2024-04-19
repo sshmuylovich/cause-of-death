@@ -372,7 +372,7 @@ ggplot(combined_data, aes(x = Year, y = Area, color = Type, group = Type)) +
 
 In our Shiny Web App, you have the flexibility to choose specific Gender and Nationality variables for detailed exploration. Examples of the types of analyses you can perform are illustrated in @fig-prediction1 and @fig-prediction2. Each graph displayed on the app is complemented by a comprehensive data table, which includes all graphed values clearly marked as either observed or predicted. This feature allows for an in-depth understanding of the data trends and model predictions based on your selections.
 
-The Shiny Web App can be found here: 
+The Shiny Web App can be found here: https://www.shinyapps.io/admin/#/application/11803830:~:text=https%3A//jm3va2%2Dsima0shmuylovich.shinyapps.io/scripts/
 
 # Results {#sec-results}
 
