@@ -384,9 +384,29 @@ The linear regression model implemented to investigate the determinants of artwo
 
 The model identified notable differences in artwork size associated with the gender of the artist. Male artists and artists identified as part of multiple artists groups tend to create smaller artworks compared to the baseline category (female artists), with coefficients of -4090.29 and -1582.77 respectively, both statistically significant with p-values near zero. This finding challenges traditional perceptions that associate male artists with larger canvas sizes. In contrast, gender non-conforming and unknown gender categories did not show a statistically significant impact, which may be reflective of their smaller representation in the dataset or other sociocultural factors not captured by the model.
 
+The coefficient for the year of completion was positive (66.13), indicating that artwork sizes have generally increased over the years. This trend is statistically significant with a p-value near zero, suggesting a steady evolution in the scale of artworks possibly due to changes in artistic styles, available technologies, and evolving cultural preferences that favor more immersive art experiences.
+
+@fig-model1 visually represents the influence of an artist's nationality on the size of their artwork. Each bar in the graph corresponds to a different nationality and illustrates the magnitude and direction (positive or negative) of the estimated coefficient. Positive values indicate a positive association between the nationality and the dependent variable, suggesting that artists from these nationalities tend to have higher values in the measured variable. Conversely, negative values suggest a negative association. The use of colors in the graph helps distinguish between positive and negative estimates at a glance, aiding in quick identification of which nationalities exhibit the strongest positive or negative influences. 
+
 Significant variances were also observed across artists' nationalities. Algerian and Ghanaian artists are associated with significantly larger artworks, with coefficients of 109109.33 and 95722.19, respectively, both with p-values indicating strong statistical significance. This may suggest a cultural or regional preference for larger-scale artworks in these countries. Conversely, most other nationalities, including American, did not demonstrate a significant deviation from the baseline, which could indicate a more varied approach to artwork size that transcends national boundaries.
 
-The coefficient for the year of completion was positive (66.13), indicating that artwork sizes have generally increased over the years. This trend is statistically significant with a p-value near zero, suggesting a steady evolution in the scale of artworks possibly due to changes in artistic styles, available technologies, and evolving cultural preferences that favor more immersive art experiences.
+@fig-model2 helps assess the distribution of p-values across tested nationalities or other categorical variables. This histogram plots the frequency of p-values obtained from the linear regression analysis,showing many of the tests resulted in significant or non-significant outcomes based on a conventional significance level (set at 0.05). The almost uniform distribution suggests that few nationalities have a statistically significant effect.
+
+```{r fig.width=6, fig.height=3}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-model2
+#| fig-cap: Histogram of P-values for Nationalities
+
+df <- tidy(model)
+
+df_nationality <- df[grep("Nationality", df$term),]
+
+ggplot(df_nationality, aes(x = p.value)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  labs(title = "Histogram of P-Values", x = "P-Value", y = "Frequency")
+```
 
 ## Model Fit and Statistical Significance
 
@@ -458,7 +478,7 @@ head(artworks_nationality, 10) %>%
 #| echo: false
 #| eval: true
 #| label: tbl-model_results
-#| tbl-cap: "Model of Artwork Size based on gender, nationality, and year completed"
+#| tbl-cap: "Model of Artwork Size: Coefficients of Gender, Nationality, and Year Completed"
 #| warning: false
 #| fig-height: 5
 #| scale: 
@@ -468,6 +488,24 @@ results <- tidy(model)
 kable(results, 
       caption = "Variable Coefficients", 
       digits = 2) 
+```
+
+```{r fig.width=6, fig.height=15}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-model1
+#| fig-cap: Coefficient Estimates by Nationality
+
+df <- tidy(model)
+
+df_nationality <- df[grep("Nationality", df$term),]
+
+ggplot(df_nationality, aes(x = term, y = estimate, fill = estimate > 0)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  coord_flip() +  # Flips the axes for better visualization
+  labs(title = "Coefficient Estimates by Nationality", x = "Nationality", y = "Estimate") +
+  scale_fill_manual(name = "Estimate Sign", values = c("red", "blue"), labels = c("Negative", "Positive"))
 ```
 
 \newpage
